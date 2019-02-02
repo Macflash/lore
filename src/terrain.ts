@@ -16,6 +16,7 @@ export interface terrain {
     // hmmm
     //water: number;
     //soil: number;
+    
 }
 
 export interface resourceLocation {

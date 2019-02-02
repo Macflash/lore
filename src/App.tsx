@@ -89,6 +89,12 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
     return resources;
   }
 
+  private testTrade(map: terrain[][], resources: resourceLocation[]) {
+    // generate a ... pressure map? Based on travel speed and distance?
+
+    
+  }
+
   private regen() {
     const { terrainCanvas } = this.state;
     if (terrainCanvas) {
@@ -99,7 +105,7 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
         this.generateTerrain(map);
         const resources = this.generateResources(map);
 
-        console.log(resources);
+        this.testTrade(map, resources);
 
         // Draw basic terrain colors
         for (var x = 0; x < this.size; x++) {
@@ -119,6 +125,10 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
                 value /= 1.5;
                 value -= 60;
                 ctx.fillStyle = "rgb(" + (value + 20) + "," + (value + 20) + "," + (value) + ")";
+              }
+              else if(value > this.mountainLevel){
+                value /= 1.35;
+                ctx.fillStyle = "rgb(" + value + "," + value + "," + value + ")";
               }
             }
             else {
