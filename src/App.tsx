@@ -122,24 +122,26 @@ class App extends Component<{}, IAppState> {
         }
       }
 
-      this.tradeCtx.clearRect(0,0, this.size, this.size);
+      this.tradeCtx.clearRect(0, 0, this.size, this.size);
       for (let i = 0; i < resources.length; i++) {
         // draw lines to the 5 closest items.
-        debugger;
-        const distances = pairwiseDistance[i].slice(0).sort((a,b) => { if(a.crow > b.crow){ return 1;} if (a.crow == b.crow){return 0;} return -1; });        
-        const closest = distances.slice(1);  
+        const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
+        const closest = distances.slice(1,10);
 
         //this.tradeCtx.lineWidth = 3;        
         this.tradeCtx.strokeStyle = "tan";
-        this.tradeCtx.beginPath();
-        for(const close of closest){
+        for (const close of closest) {
+          this.tradeCtx.beginPath();
+          debugger;
+          this.tradeCtx.strokeStyle = "rgba(160,140,100," + (255 / close.crow) + ")";
+          this.tradeCtx.lineWidth = 100 / close.crow;
           this.tradeCtx.moveTo(resources[i].x, resources[i].y);
           this.tradeCtx.lineTo(resources[close.index].x, resources[close.index].y);
           this.tradeCtx.stroke();
           console.log("connecting " + i + " to " + close.index);
+          this.tradeCtx.closePath();
         }
-        this.tradeCtx.closePath();
-        
+
         // spread out and try to find other resources to trade for?
         // find the 
       }
