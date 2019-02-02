@@ -92,7 +92,8 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
   private testTrade(map: terrain[][], resources: resourceLocation[]) {
     // generate a ... pressure map? Based on travel speed and distance?
 
-    
+    // should cities be ON resources or near them?
+
   }
 
   private regen() {
