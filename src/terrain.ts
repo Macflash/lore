@@ -19,6 +19,15 @@ export interface terrain {
     
 }
 
+export interface caravan {
+    x: number;
+    y: number;
+    resource: Resource;
+}
+
+export interface trail {
+}
+
 export interface resourceLocation {
     resource: Resource;
     x: number;
@@ -53,7 +62,7 @@ export const ResourceSpawnRates: ResourceSpawnCriterion[] = [
     },
     {
         resource: Resource.Crops,
-        number: 15,
+        number: 18,
         min: 20,
         max: 100,
     },
@@ -65,7 +74,7 @@ export const ResourceSpawnRates: ResourceSpawnCriterion[] = [
     },
     {
         resource: Resource.Fish,
-        number: 5,
+        number: 7,
         min: 10,
         max: 20,
     },
