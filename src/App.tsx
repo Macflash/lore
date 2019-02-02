@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import SimplexNoise from 'simplex-noise';
-import { terrain, ResourceSpawnRates } from './terrain';
+import { terrain, ResourceSpawnRates, resourceLocation, Resource } from './terrain';
 
 class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
   private ctx: CanvasRenderingContext2D | null = null;
@@ -47,8 +47,8 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
       }
     }
 
-    heights = heights.sort((a:number,b:number) => { if(a > b){ return 1;} if(a == b){ return 0;} return -1;});
-    
+    heights = heights.sort((a: number, b: number) => { if (a > b) { return 1; } if (a == b) { return 0; } return -1; });
+
     // sea floor should always be... this.waterLevel
     // tallest mountains should always be... this.mountainLevel
     // SCALE the map to get some mountains, and to get some decent range of heights
@@ -65,19 +65,28 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
     }
   }
 
-  private generateResources(map: terrain[][]){
-    for(let resourceSpawn of ResourceSpawnRates){
-      let probabilities: number[] = [];
-      for (var x = 0; x < this.size; x++) {
-        for (var y = 0; y < this.size; y++) {
+  private generateResources(map: terrain[][]): resourceLocation[] {
+    let resources: resourceLocation[] = [];
+    for (let resourceSpawn of ResourceSpawnRates) {
+      let probabilities: { value: number, x: number, y: number }[] = [];
+      for (let x = 0; x < this.size; x++) {
+        for (let y = 0; y < this.size; y++) {
           let tile = map[x][y];
-          if(tile.resource == undefined && tile.height >= resourceSpawn.min && tile.height <= resourceSpawn.max){
-            
+          if (tile.resource == undefined && tile.height >= resourceSpawn.min && tile.height <= resourceSpawn.max) {
+            probabilities.push({ value: Math.random(), x, y });
           }
         }
       }
+
+      probabilities = probabilities.sort((a, b) => { if (a.value > b.value) { return 1; } if (a.value == b.value) { return 0; } return -1; });
+      for (let i = 0; i < resourceSpawn.number; i++) {
+        let p = probabilities[i];
+        map[p.x][p.y].resource = resourceSpawn.resource;
+        resources.push({ resource: resourceSpawn.resource, x: p.x, y: p.y });
+      }
     }
 
+    return resources;
   }
 
   private regen() {
@@ -88,24 +97,17 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
         this.ctx = ctx;
         const map = this.createEmptyMap(this.size);
         this.generateTerrain(map);
+        const resources = this.generateResources(map);
 
-        console.log("generating");
+        console.log(resources);
 
-        // generate some noise!
-        var simplex = new SimplexNoise();
-
-        // should instead BALANCE the water after each stage.
-        // ideally want something like 50-75% covered by water?
-        var resources = [];
-
+        // Draw basic terrain colors
         for (var x = 0; x < this.size; x++) {
           for (var y = 0; y < this.size; y++) {
             let value = map[x][y].height;
             if (value > this.waterLevel) {
               ctx.fillStyle = "rgb(" + value + "," + value + "," + value + ")";
 
-              // VERY basic resources
-              // GOLD, GREEN, etc
               if (value < this.waterLevel + 15) {
                 ctx.fillStyle = "rgb(" + (value + 40) + "," + (value + 10) + "," + (value - 50) + ")";
               }
@@ -118,67 +120,54 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
                 value -= 60;
                 ctx.fillStyle = "rgb(" + (value + 20) + "," + (value + 20) + "," + (value) + ")";
               }
-
-
             }
             else {
               // water
               ctx.fillStyle = "rgb(5, 10, " + Math.max((value + 40) * 10, 50) + ")";
             }
 
-            // do resources!!
-            if (value > 120 && Math.random() > .9999) {
-              // GOLD!
-              ctx.fillStyle = "rgb(230, 230, 0)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            // TODO: add the QUALITY of the land as well, since it depends on water
-            if (value > this.waterLevel + 10 && value < 100 && Math.random() > .9999) {
-              // Farmland!!
-              ctx.fillStyle = "rgb(0, 200, 0)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            // TODO: add the QUALITY of the land as well, since it depends on water
-            if (value > 100 && value < 190 && Math.random() > .9997) {
-              // Forest!!
-              ctx.fillStyle = "rgb(0, 150, 0)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            if (value > this.waterLevel && value < this.waterLevel + 10 && Math.random() > .9995) {
-              // Fish!!
-              ctx.fillStyle = "rgb(200, 0, 200)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-
-            if (((value > this.waterLevel && value < this.waterLevel + 15) || (value < 230 && value > 200)) && Math.random() > .9999) {
-              // Salt!!
-              ctx.fillStyle = "rgb(250, 250, 250)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            if (value > this.waterLevel + 20 && value < this.waterLevel + 40 && Math.random() > .9999) {
-              // Spice!!
-              ctx.fillStyle = "rgb(200, 0, 0)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            if (value > 60 && Math.random() > .9999) {
-              // iron!!
-              ctx.fillStyle = "rgb(100, 100, 100)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
-            if (value > 100 && Math.random() > .9999) {
-              // copper!!
-              ctx.fillStyle = "rgb(180, 140, 70)";
-              ctx.fillRect(x - 5, y - 5, 10, 10);
-            }
-
+            // draw the tile
             ctx.fillRect(x, y, 1, 1);
+          }
+        }
+
+        // Draw resource markers
+        for (var x = 0; x < this.size; x++) {
+          for (var y = 0; y < this.size; y++) {
+            if (map[x][y].resource != undefined) {
+              ctx.fillStyle = "rgb(0, 0, 0)";
+              ctx.fillRect(x - 5, y - 5, 10, 10);
+
+              switch (map[x][y].resource) {
+                case Resource.Gold:
+                  ctx.fillStyle = "rgb(230, 230, 0)";
+                  break;
+                case Resource.Crops:
+                  ctx.fillStyle = "rgb(0, 200, 0)";
+                  break;
+                case Resource.Wood:
+                  ctx.fillStyle = "rgb(0, 150, 0)";
+                  break;
+                case Resource.Iron:
+                  ctx.fillStyle = "rgb(100, 100, 100)";
+                  break;
+                case Resource.Copper:
+                  ctx.fillStyle = "rgb(180, 140, 70)";
+                  break;
+                case Resource.Fish:
+                  ctx.fillStyle = "rgb(200, 0, 200)";
+                  break;
+                case Resource.Salt:
+                  ctx.fillStyle = "rgb(250, 250, 250)";
+                  break;
+                case Resource.Spice:
+                  ctx.fillStyle = "rgb(200, 0, 0)";
+                  break;
+
+              }
+
+              ctx.fillRect(x - 4, y - 4, 8, 8);
+            }
           }
         }
       }
