@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import SimplexNoise from 'simplex-noise';
-import { terrain } from './terrain';
+import { terrain, ResourceSpawnRates } from './terrain';
 
 class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
   private ctx: CanvasRenderingContext2D | null = null;
@@ -48,22 +48,36 @@ class App extends Component<{}, { terrainCanvas?: HTMLCanvasElement }> {
     }
 
     heights = heights.sort((a:number,b:number) => { if(a > b){ return 1;} if(a == b){ return 0;} return -1;});
-
     
-    // sea floor should always be... 10
+    // sea floor should always be... this.waterLevel
     // tallest mountains should always be... this.mountainLevel
     // SCALE the map to get some mountains, and to get some decent range of heights
     const seaLevel = heights[Math.floor(heights.length / 2)];
     const mountainLevel = heights[Math.floor(heights.length * .95)];
     const range = mountainLevel - seaLevel;
-    const scale = (this.mountainLevel - 10) / range;
+    const scale = (this.mountainLevel - this.waterLevel) / range;
 
     for (let x = 0; x < map.length; x++) {
       for (let y = 0; y < map[x].length; y++) {
         const h = map[x][y].height;
-        map[x][y].height = ((h - seaLevel) * scale) + 10;
+        map[x][y].height = ((h - seaLevel) * scale) + this.waterLevel;
       }
     }
+  }
+
+  private generateResources(map: terrain[][]){
+    for(let resourceSpawn of ResourceSpawnRates){
+      let probabilities: number[] = [];
+      for (var x = 0; x < this.size; x++) {
+        for (var y = 0; y < this.size; y++) {
+          let tile = map[x][y];
+          if(tile.resource == undefined && tile.height >= resourceSpawn.min && tile.height <= resourceSpawn.max){
+            
+          }
+        }
+      }
+    }
+
   }
 
   private regen() {
