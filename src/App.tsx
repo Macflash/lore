@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import SimplexNoise from 'simplex-noise';
 import { terrain, ResourceSpawnRates, resourceLocation, Resource } from './terrain';
+import { water, gradient } from './water';
 
 interface IAppState {
   terrainCanvas?: HTMLCanvasElement;
@@ -126,13 +127,11 @@ class App extends Component<{}, IAppState> {
       for (let i = 0; i < resources.length; i++) {
         // draw lines to the 5 closest items.
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
-        const closest = distances.slice(1,10);
+        const closest = distances.slice(1, 10);
 
-        //this.tradeCtx.lineWidth = 3;        
         this.tradeCtx.strokeStyle = "tan";
         for (const close of closest) {
           this.tradeCtx.beginPath();
-          debugger;
           this.tradeCtx.strokeStyle = "rgba(160,140,100," + (255 / close.crow) + ")";
           this.tradeCtx.lineWidth = 100 / close.crow;
           this.tradeCtx.moveTo(resources[i].x, resources[i].y);
@@ -146,6 +145,153 @@ class App extends Component<{}, IAppState> {
         // find the 
       }
     }
+  }
+
+  private getTile<T>(map: T[][], x: number, y: number, direction?: "north" | "south" | "east" | "west"): T | undefined {
+    switch (direction) {
+      case "north":
+        x -= 1;
+        break;
+      case "south":
+        x += 1;
+        break;
+      case "east":
+        y += 1;
+        break;
+      case "west":
+        y -= 1;
+        break;
+    }
+
+    // ASSUMES SQUARE MAP!
+    if (x > 0 && x < map.length && y > 0 && y < map.length) {
+      return map[x][y];
+    }
+
+    return undefined;
+  }
+
+  private getHeight(map: terrain[][], x: number, y: number, offset = 0): number | undefined {
+    // ASSUMES SQUARE MAP!
+    if (x > 0 && x < map.length && y > 0 && y < map.length) {
+      return map[x][y].height - offset;
+    }
+
+    return undefined;
+  }
+
+  private createGradient(map: terrain[][]): gradient[][] {
+    let gradient: gradient[][] = [];
+
+    for (let x = 0; x < map.length; x++) {
+      gradient[x] = [];
+      for (let y = 0; y < map.length; y++) {
+        let t = map[x][y].height;
+        let g: gradient = {
+          north: this.getHeight(map, x - 1, y, t),
+          south: this.getHeight(map, x + 1, y, t),
+          east: this.getHeight(map, x, y + 1, t),
+          west: this.getHeight(map, x, y - 1, t),
+          lowest: "north",
+        };
+
+        if (!g.lowest || (g.south && g.south < g[g.lowest]!)) { g.lowest = "south"; }
+        if (!g.lowest || (g.east && g.east < g[g.lowest]!)) { g.lowest = "east"; }
+        if (!g.lowest || (g.west && g.west < g[g.lowest]!)) { g.lowest = "west"; }
+
+        gradient[x][y] = g;
+      }
+    }
+
+    return gradient;
+  }
+
+  private testWater(map: terrain[][]): water[][] {
+    // calculate the gradient on each tile?
+    // then decide how much water each area gets?
+    // and build rivers and lakes and stuff based on that?
+
+
+    const waterTable: water[][] = [];
+    let allWater: water[] = [];
+    for (let x = 0; x < map.length; x++) {
+      waterTable[x] = [];
+      for (let y = 0; y < map.length; y++) {
+        if (map[x][y].height > this.waterLevel) {
+          const tile = waterTable[x][y] = { x, y, volume: 1, height: map[x][y].height };
+          allWater.push(tile);
+        }
+      }
+    }
+
+    // sort the map and starting from the HIGHEST point sum downwards until WATER LEVEL
+
+    // set the min water value to display river (basically muddy, slightly slower to pass)
+    // set the max water value that can fit in a tile (massive river, almost impossible to pass without a bridge)
+    const minWater = 500;
+    const maxWater = 900;
+
+    allWater = allWater.sort((a, b) => { if (a.height < b.height) { return 1; } if (a.height == b.height) { return 0; } return -1; });
+    console.log("all water", allWater);
+
+    const gradient = this.createGradient(map);
+
+    // go through all of the tiles and add up the water downstream
+    for (const w of allWater) {
+      const g = gradient[w.x][w.y];
+
+      let dest = this.getTile(waterTable, w.x, w.y, g.lowest);
+
+      if (dest) {
+          dest.volume += w.volume;
+/*
+          // can't flow more than maxWater, so if more than that you need to flow multiple places!
+        if (dest.volume >= maxWater || w.volume >= maxWater) {
+          console.log("reached max water!");
+          // flow based on the gradient, divided based on the slope?
+
+          //debugger;
+          var dirs: ("north" | "south" | "east" | "west")[] = ["north", "south", "east", "west"];
+          dirs = dirs.sort((a, b) => {
+            if (g[a] == g[b]) { return 0; }
+            if (g[a] == undefined) { return -1; }
+            if (g[b] == undefined) { return 1; }
+            if (g[a] != undefined && g[b] != undefined) {
+              if (g[a]! < g[b]!) { return 1; }
+            }
+
+            return -1;
+          });
+
+          let waterToFlow = w.volume;
+
+          for(const dir of dirs){
+            if(waterToFlow > 0){
+              const t = this.getTile(waterTable, w.x,w.y, dir);
+              if(t && t.volume < maxWater){
+                let flow = Math.min(maxWater - t.volume, waterToFlow);
+                t.volume += flow;
+                waterToFlow -= flow;
+              }
+            }
+          }
+
+          if(waterToFlow > 0){
+            // very big flow!!
+            console.error("very big flow!!", waterToFlow);
+            dest.volume += waterToFlow;
+          }
+        }
+        else {
+          // simple case
+          dest.volume += w.volume;
+        }
+
+        */
+      }
+    }
+
+    return waterTable;
   }
 
   private regen() {
@@ -162,7 +308,6 @@ class App extends Component<{}, IAppState> {
         const map = this.createEmptyMap(this.size);
         this.generateTerrain(map);
         const resources = this.generateResources(map);
-
 
         // Draw basic terrain colors
         for (var x = 0; x < this.size; x++) {
@@ -238,7 +383,22 @@ class App extends Component<{}, IAppState> {
           }
         }
 
-        this.testTrade(map, resources);
+        const waterTable = this.testWater(map);
+        //this.testTrade(map, resources);
+
+        this.tradeCtx.clearRect(0, 0, this.size, this.size);
+        for (var x = 0; x < this.size; x++) {
+          for (var y = 0; y < this.size; y++) {
+            if (waterTable[x][y] && waterTable[x][y].volume > 500) {
+              this.tradeCtx.fillStyle = "blue";
+              if (waterTable[x][y].volume >= 880) {
+                this.tradeCtx.fillStyle = "blue";
+              }
+              this.tradeCtx.fillRect(x, y, 1, 1);
+            }
+          }
+        }
+
       }
     }
   }
