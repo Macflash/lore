@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import './App.css';
 import SimplexNoise from 'simplex-noise';
 import { terrain, ResourceSpawnRates, resourceLocation, Resource } from './terrain';
-import { water, gradient } from './water';
+import { water, gradient, resourceTile, direction } from './water';
+import { number } from 'prop-types';
 
 interface IAppState {
   terrainCanvas?: HTMLCanvasElement;
@@ -98,13 +99,54 @@ class App extends Component<{}, IAppState> {
     return resources;
   }
 
+
   private testTrade(map: terrain[][], resources: resourceLocation[]) {
     // generate a ... pressure map? Based on travel speed and distance?
+    // generate the PROXIMITY for each resource separately and build 
 
-    // should cities be ON resources or near them?
+    // Create a resource gradient
+    const resourceGradient: resourceTile[][] = [];
+    for(let i = 0; i < map.length; i++){
+      resourceGradient[i] = [];
+    }
+
+    const allResourceGradientTiles: resourceTile[] = [];
+
+    for(const resource of resources){
+      // add these to the resource gradient
+      var defaultValue = 1000; // this could vary later based on stuff.
+      resourceGradient[resource.x][resource.y] = {x: resource.x, y: resource.y, resources: []};
+      resourceGradient[resource.x][resource.y].resources[resource.resource] = defaultValue;
+      allResourceGradientTiles.push(resourceGradient[resource.x][resource.y]);
+    }
+
+    // now we want to iterate through the resource gradient tiles and expand them based on their neighboring values
+    for(let i = 0; i < 1000; i++){
+      let hasChanged = false;
+
+      //let newTiles: resourceTile[] = [];
+      for(const rgrad of allResourceGradientTiles){
+        // for each tile, get the maximum value from the neighbors!
+        var dirs: direction[] = ["north", "south", "east", "west"];
+        var neighbors = dirs.map(dir => this.getTile(resourceGradient, rgrad.x, rgrad.y, dir)).filter(v => v != undefined);
+        var max: number[] = [];
+        for(const neighbor of neighbors){
+          if(neighbor && neighbor.resources){
+            // do the calculation for EACH resource!
+            for(const r of [Resource.Gold]){
+
+            }
+          }
+        }
+      }
+
+      //allResourceGradientTiles.push(newTiles);
+
+      if(!hasChanged){break;}
+    }
 
     // how to path find between cities and resources?
-
+    /*
     if (this.tradeCtx) {
       // co-ordered with the resource list
       var pairwiseDistance: { index: number, crow: number, sell: Resource, buy: Resource }[][] = [];
@@ -145,6 +187,7 @@ class App extends Component<{}, IAppState> {
         // find the 
       }
     }
+    */
   }
 
   private getTile<T>(map: T[][], x: number, y: number, direction?: "north" | "south" | "east" | "west"): T | undefined {
@@ -383,9 +426,10 @@ class App extends Component<{}, IAppState> {
           }
         }
 
-        const waterTable = this.testWater(map);
-        //this.testTrade(map, resources);
+        this.testTrade(map, resources);
 
+        /*
+        const waterTable = this.testWater(map);
         this.tradeCtx.clearRect(0, 0, this.size, this.size);
         for (var x = 0; x < this.size; x++) {
           for (var y = 0; y < this.size; y++) {
@@ -394,10 +438,11 @@ class App extends Component<{}, IAppState> {
               if (waterTable[x][y].volume >= 880) {
                 this.tradeCtx.fillStyle = "blue";
               }
+
               this.tradeCtx.fillRect(x, y, 1, 1);
             }
           }
-        }
+        }*/
 
       }
     }

@@ -1,5 +1,12 @@
 // there will end up being gradients PER resource?
 // and trade routes are basically "water" flow between towns?
+export type direction = "north" | "south" | "east" | "west";
+
+export interface resourceTile {
+    x: number;
+    y: number;
+    resources: number[]; // indexed by resource!
+}
 
 export interface gradient {
     // want to point the best way down for each direction
@@ -10,7 +17,7 @@ export interface gradient {
     east?: number;
     west?: number;
 
-    lowest: "north" | "south" | "east" | "west";
+    lowest: direction;
 }
 
 // there should probably be some "MAX" water that will be used to determine the width of rivers and etc.
