@@ -230,7 +230,7 @@ class App extends Component<{}, IAppState> {
         const currentStartingResource = resources[i];
         // draw lines to the 5 closest items.
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
-        const closest = distances.slice(1, 5);
+        const closest = distances.slice(1, 7);
 
         this.tradeCtx.strokeStyle = "tan";
         for (const close of closest) {
@@ -243,7 +243,7 @@ class App extends Component<{}, IAppState> {
           //console.log("connecting " + i + " to " + close.index);
           this.tradeCtx.closePath();
         }
-
+/*
         // spread out and try to find other resources to trade for
 
         // spread out! and when you hit a resource you just follow the gradient
@@ -312,13 +312,15 @@ class App extends Component<{}, IAppState> {
 
 
         break;
+      */
       }
 
+      
       // draw all the trails!
-      this.tradeCtx.clearRect(0, 0, this.size, this.size);
       for(var trail of trails){
         this.tradeCtx.fillRect(trail.x, trail.y, 1,1);
       }
+
     }
   }
 
