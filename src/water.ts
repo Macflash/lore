@@ -1,11 +1,17 @@
 // there will end up being gradients PER resource?
 // and trade routes are basically "water" flow between towns?
 export type direction = "north" | "south" | "east" | "west";
+export const allDirections: direction[] = ["north" , "south" , "east" , "west"];
 
-export interface resourceTile {
+export interface tile {
     x: number;
     y: number;
-    resources: number[]; // indexed by resource!
+    hasChanged?: boolean;
+    height: number;
+}
+
+export interface resourceTile extends tile {
+    distance: number; // indexed by resource!
 }
 
 export interface gradient {

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import './App.css';
 import SimplexNoise from 'simplex-noise';
-import { terrain, ResourceSpawnRates, resourceLocation, Resource } from './terrain';
-import { water, gradient, resourceTile, direction } from './water';
+import { terrain, ResourceSpawnRates, resourceLocation, Resource, trail } from './terrain';
+import { water, gradient, resourceTile, direction, tile, allDirections } from './water';
 import { number } from 'prop-types';
 
 interface IAppState {
@@ -99,54 +99,113 @@ class App extends Component<{}, IAppState> {
     return resources;
   }
 
+  private getResource(item: number | undefined, min: number): number {
+    if (item == undefined || isNaN(item)) {
+      return min;
+    }
 
-  private testTrade(map: terrain[][], resources: resourceLocation[]) {
+    return item;
+  }
+  /*
+  private iterateGradient(defaultValue:number, map: terrain[][], resources: resourceLocation[], ctx: CanvasRenderingContext2D, resourceGradient: resourceTile[][], allResourceGradientTiles: resourceTile[]){
+    var defaultMin = -1 * defaultValue; // this could vary later based on stuff.
+    console.log("gradient length", allResourceGradientTiles.length);
+    ctx.clearRect(0,0,this.size, this.size);
+  
+    let newTiles: resourceTile[] = [];
+    for (const rgrad of allResourceGradientTiles) {
+      if(!rgrad.hasChanged){continue;}
+      // for each tile, get the maximum value from the neighbors!
+      var dirs: direction[] = ["north", "south", "east", "west"];
+      var neighbors = dirs.map(dir => this.getOrCreateTile(resourceGradient, rgrad.x, rgrad.y, dir)).filter(v => v != undefined);
+      var max: number[] = rgrad.resources.slice(0);
+  
+      for (const neighbor of neighbors) {
+        if (neighbor) {
+          if (neighbor.resources) {
+            // do the calculation for EACH resource!
+            for (const r in neighbor.resources) {
+              max[r] = Math.max(this.getResource(neighbor.resources[r], defaultMin), this.getResource(max[r], defaultMin));
+            }
+          }
+          else {
+            neighbor.resources = [];
+            newTiles.push(neighbor);
+          }
+        }
+      }
+  
+      // for each value we should subtract our tiles intrisinc 
+      var tileCost = map[rgrad.x][rgrad.y].height;
+      var newResources = max.map((v, i) => {
+        return Math.max(v - tileCost, this.getResource(rgrad.resources[i], defaultMin));
+      });
+      rgrad.hasChanged = false;
+  
+      for(var i = 0; i < newResources.length; i++){
+        if(newResources[i] != rgrad.resources[i]){
+          rgrad.hasChanged = true;
+          break;
+        }
+      }
+  
+      if(rgrad.hasChanged){
+        for(var n of neighbors){
+          if(n){
+            n.hasChanged = true;
+          }
+        }
+  
+        rgrad.hasChanged = false;
+      }
+  
+      
+      var m = defaultMin;
+      for (const r in rgrad.resources) {
+        m = Math.max(m, this.getResource(newResources[r], defaultMin));
+      }
+  
+      if(isNaN(m)){ debugger;}
+  
+      rgrad.resources = newResources;
+  
+      var value = (255 * m / defaultValue);
+      //if(value < 0){ debugger;}
+      //console.log(value);
+      ctx.fillStyle = "rgba(255,0,0, " + value + ")"
+      ctx.fillRect(rgrad.x, rgrad.y, 1, 1);
+    }
+  
+    allResourceGradientTiles = allResourceGradientTiles.concat(newTiles);
+    setTimeout(() => {
+      this.iterateGradient(defaultValue, map, resources, ctx,resourceGradient, allResourceGradientTiles);
+    }, 100);
+  }
+  */
+  private testTrade(map: terrain[][], resources: resourceLocation[], ctx: CanvasRenderingContext2D) {
     // generate a ... pressure map? Based on travel speed and distance?
     // generate the PROXIMITY for each resource separately and build 
 
     // Create a resource gradient
     const resourceGradient: resourceTile[][] = [];
-    for(let i = 0; i < map.length; i++){
+    for (let i = 0; i < map.length; i++) {
       resourceGradient[i] = [];
     }
 
-    const allResourceGradientTiles: resourceTile[] = [];
+    let allResourceGradientTiles: resourceTile[] = [];
 
-    for(const resource of resources){
+    var defaultValue = 0; // this could vary later based on stuff.
+    for (const resource of resources) {
       // add these to the resource gradient
-      var defaultValue = 1000; // this could vary later based on stuff.
-      resourceGradient[resource.x][resource.y] = {x: resource.x, y: resource.y, resources: []};
-      resourceGradient[resource.x][resource.y].resources[resource.resource] = defaultValue;
-      allResourceGradientTiles.push(resourceGradient[resource.x][resource.y]);
+      resourceGradient[resource.x][resource.y] = { x: resource.x, y: resource.y, distance: 0, height: map[resource.x][resource.y].height };
+      break; // only do the first for now
+      //allResourceGradientTiles.push(resourceGradient[resource.x][resource.y]);
     }
 
-    // now we want to iterate through the resource gradient tiles and expand them based on their neighboring values
-    for(let i = 0; i < 1000; i++){
-      let hasChanged = false;
-
-      //let newTiles: resourceTile[] = [];
-      for(const rgrad of allResourceGradientTiles){
-        // for each tile, get the maximum value from the neighbors!
-        var dirs: direction[] = ["north", "south", "east", "west"];
-        var neighbors = dirs.map(dir => this.getTile(resourceGradient, rgrad.x, rgrad.y, dir)).filter(v => v != undefined);
-        var max: number[] = [];
-        for(const neighbor of neighbors){
-          if(neighbor && neighbor.resources){
-            // do the calculation for EACH resource!
-            for(const r of [Resource.Gold]){
-
-            }
-          }
-        }
-      }
-
-      //allResourceGradientTiles.push(newTiles);
-
-      if(!hasChanged){break;}
-    }
+    //this.iterateGradient(defaultValue, map, resources, ctx, resourceGradient, allResourceGradientTiles);
 
     // how to path find between cities and resources?
-    /*
+
     if (this.tradeCtx) {
       // co-ordered with the resource list
       var pairwiseDistance: { index: number, crow: number, sell: Resource, buy: Resource }[][] = [];
@@ -166,10 +225,12 @@ class App extends Component<{}, IAppState> {
       }
 
       this.tradeCtx.clearRect(0, 0, this.size, this.size);
+      const trails: tile[] = [];
       for (let i = 0; i < resources.length; i++) {
+        const currentStartingResource = resources[i];
         // draw lines to the 5 closest items.
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
-        const closest = distances.slice(1, 10);
+        const closest = distances.slice(1, 5);
 
         this.tradeCtx.strokeStyle = "tan";
         for (const close of closest) {
@@ -179,15 +240,141 @@ class App extends Component<{}, IAppState> {
           this.tradeCtx.moveTo(resources[i].x, resources[i].y);
           this.tradeCtx.lineTo(resources[close.index].x, resources[close.index].y);
           this.tradeCtx.stroke();
-          console.log("connecting " + i + " to " + close.index);
+          //console.log("connecting " + i + " to " + close.index);
           this.tradeCtx.closePath();
         }
 
-        // spread out and try to find other resources to trade for?
-        // find the 
+        // spread out and try to find other resources to trade for
+
+        // spread out! and when you hit a resource you just follow the gradient
+        let activeTiles: resourceTile[] = [{ x: resources[i].x, y: resources[i].y, distance: 0, height: map[resources[i].x][resources[i].y].height }];
+        while (activeTiles && activeTiles.length) {
+          const cur = activeTiles.shift();
+
+
+          if (!cur) { break; }
+          this.tradeCtx.fillStyle = "red";
+          this.tradeCtx.fillRect(cur.x, cur.y, 1, 1);
+
+          const neighbors = allDirections.map(dir => this.getNewTilesOnly(resourceGradient, cur.x, cur.y, dir));
+          for (const n of neighbors) {
+            if (n) {
+              // make a new tile and add it to the active tiles
+              // total height = more difficulty
+              // variation in height = more difficulty
+              var maptile = map[n.x][n.y];
+              n.height = Math.max(maptile.height, 10);
+
+              // if n is a city with resources we should follow these and CONNECT stuff.
+              if (maptile.resource != undefined) {
+                console.log("hit a city!!");
+
+                // try to go BACKWARDS creating a cool tile thing
+                var curTrail = n;
+                trails.push(curTrail);
+                  console.log("destination x: " + currentStartingResource.x + " y: " + currentStartingResource.y);
+                  while (curTrail.x != currentStartingResource.x
+                  && curTrail.y != currentStartingResource.y) {
+                    console.log("current x: " + curTrail.x + " y: " + curTrail.y);
+                    var lowestNeighbor = this.getLowestNeighbor(resourceGradient, curTrail);
+                    curTrail = lowestNeighbor;
+                    trails.push(curTrail);
+                  }
+
+                  console.log("connected a city fully!");
+                break;
+              }
+              else {
+                //debugger;
+                n.distance = cur.distance + Math.abs(cur.height - n.height) + Math.log(n.height);
+
+                if (isNaN(n.distance)) {
+                  debugger;
+                  console.error("nan distance!");
+                }
+
+
+                if (n.distance > 1000) {
+                  console.log("traveled too far");
+                  break;
+                }
+                else {
+                  activeTiles.push(n);
+                  console.log("distance", n.distance);
+                }
+              }
+
+
+            }
+          }
+
+        }
+
+
+        break;
+      }
+
+      // draw all the trails!
+      this.tradeCtx.clearRect(0, 0, this.size, this.size);
+      for(var trail of trails){
+        this.tradeCtx.fillRect(trail.x, trail.y, 1,1);
       }
     }
-    */
+  }
+
+
+  private getNewTilesOnly<T extends tile>(map: T[][], x: number, y: number, direction?: "north" | "south" | "east" | "west"): T | undefined {
+    switch (direction) {
+      case "north":
+        x -= 1;
+        break;
+      case "south":
+        x += 1;
+        break;
+      case "east":
+        y += 1;
+        break;
+      case "west":
+        y -= 1;
+        break;
+    }
+
+    // ASSUMES SQUARE MAP!
+    if (x > 0 && x < map.length && y > 0 && y < map.length) {
+      if (!map[x][y]) {
+        return map[x][y] = { x, y, hasChanged: true } as T;
+      }
+    }
+
+    return undefined;
+  }
+
+  private getOrCreateTile<T extends tile>(map: T[][], x: number, y: number, direction?: "north" | "south" | "east" | "west"): T | undefined {
+    switch (direction) {
+      case "north":
+        x -= 1;
+        break;
+      case "south":
+        x += 1;
+        break;
+      case "east":
+        y += 1;
+        break;
+      case "west":
+        y -= 1;
+        break;
+    }
+
+    // ASSUMES SQUARE MAP!
+    if (x > 0 && x < map.length && y > 0 && y < map.length) {
+      if (!map[x][y]) {
+        map[x][y] = { x, y, hasChanged: true } as T;
+      }
+
+      return map[x][y];
+    }
+
+    return undefined;
   }
 
   private getTile<T>(map: T[][], x: number, y: number, direction?: "north" | "south" | "east" | "west"): T | undefined {
@@ -212,6 +399,22 @@ class App extends Component<{}, IAppState> {
     }
 
     return undefined;
+  }
+
+  private getLowestNeighbor(map: resourceTile[][], currentTile: resourceTile):  resourceTile {
+    var neighbors = allDirections.map(dir => this.getTile(map, currentTile.x, currentTile.y, dir));
+    var lowest: resourceTile | undefined;
+    for(var n of neighbors){
+      if(!lowest){
+        lowest = n;
+      }
+
+      if(n && lowest && n.distance < lowest.distance){
+        lowest = n;
+      }
+    }
+
+    return lowest!;
   }
 
   private getHeight(map: terrain[][], x: number, y: number, offset = 0): number | undefined {
@@ -286,51 +489,51 @@ class App extends Component<{}, IAppState> {
       let dest = this.getTile(waterTable, w.x, w.y, g.lowest);
 
       if (dest) {
-          dest.volume += w.volume;
-/*
-          // can't flow more than maxWater, so if more than that you need to flow multiple places!
-        if (dest.volume >= maxWater || w.volume >= maxWater) {
-          console.log("reached max water!");
-          // flow based on the gradient, divided based on the slope?
-
-          //debugger;
-          var dirs: ("north" | "south" | "east" | "west")[] = ["north", "south", "east", "west"];
-          dirs = dirs.sort((a, b) => {
-            if (g[a] == g[b]) { return 0; }
-            if (g[a] == undefined) { return -1; }
-            if (g[b] == undefined) { return 1; }
-            if (g[a] != undefined && g[b] != undefined) {
-              if (g[a]! < g[b]!) { return 1; }
-            }
-
-            return -1;
-          });
-
-          let waterToFlow = w.volume;
-
-          for(const dir of dirs){
-            if(waterToFlow > 0){
-              const t = this.getTile(waterTable, w.x,w.y, dir);
-              if(t && t.volume < maxWater){
-                let flow = Math.min(maxWater - t.volume, waterToFlow);
-                t.volume += flow;
-                waterToFlow -= flow;
-              }
-            }
-          }
-
-          if(waterToFlow > 0){
-            // very big flow!!
-            console.error("very big flow!!", waterToFlow);
-            dest.volume += waterToFlow;
-          }
-        }
-        else {
-          // simple case
-          dest.volume += w.volume;
-        }
-
-        */
+        dest.volume += w.volume;
+        /*
+                  // can't flow more than maxWater, so if more than that you need to flow multiple places!
+                if (dest.volume >= maxWater || w.volume >= maxWater) {
+                  console.log("reached max water!");
+                  // flow based on the gradient, divided based on the slope?
+        
+                  //debugger;
+                  var dirs: ("north" | "south" | "east" | "west")[] = ["north", "south", "east", "west"];
+                  dirs = dirs.sort((a, b) => {
+                    if (g[a] == g[b]) { return 0; }
+                    if (g[a] == undefined) { return -1; }
+                    if (g[b] == undefined) { return 1; }
+                    if (g[a] != undefined && g[b] != undefined) {
+                      if (g[a]! < g[b]!) { return 1; }
+                    }
+        
+                    return -1;
+                  });
+        
+                  let waterToFlow = w.volume;
+        
+                  for(const dir of dirs){
+                    if(waterToFlow > 0){
+                      const t = this.getTile(waterTable, w.x,w.y, dir);
+                      if(t && t.volume < maxWater){
+                        let flow = Math.min(maxWater - t.volume, waterToFlow);
+                        t.volume += flow;
+                        waterToFlow -= flow;
+                      }
+                    }
+                  }
+        
+                  if(waterToFlow > 0){
+                    // very big flow!!
+                    console.error("very big flow!!", waterToFlow);
+                    dest.volume += waterToFlow;
+                  }
+                }
+                else {
+                  // simple case
+                  dest.volume += w.volume;
+                }
+        
+                */
       }
     }
 
@@ -426,7 +629,9 @@ class App extends Component<{}, IAppState> {
           }
         }
 
-        this.testTrade(map, resources);
+        setTimeout(() => {
+          this.testTrade(map, resources, tradeCtx!);
+        }, 100);
 
         /*
         const waterTable = this.testWater(map);
