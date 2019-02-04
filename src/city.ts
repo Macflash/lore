@@ -110,7 +110,8 @@ export class city implements iCity {
             // Elasticity of the good vs price?
             Qs += (goods[i].elasticity * price[i]);
 
-            supply[i] = Qs;
+            // can't exceed local supply
+            supply[i] = Math.min(Qs, stock[i]);
         }
 
         return supply;
