@@ -4,6 +4,8 @@ import SimplexNoise from 'simplex-noise';
 import { terrain, ResourceSpawnRates, resourceLocation, Resource, trail } from './terrain';
 import { water, gradient, resourceTile, direction, tile, allDirections } from './water';
 import { number } from 'prop-types';
+import { city } from './city';
+import { goods } from './economy';
 
 interface IAppState {
   terrainCanvas?: HTMLCanvasElement;
@@ -553,6 +555,10 @@ class App extends Component<{}, IAppState> {
         this.tradeCtx = tradeCtx;
         this.markerCtx = markerCtx;
 
+        this.terrainCtx.clearRect(0,0,this.size, this.size);
+        this.tradeCtx.clearRect(0,0,this.size, this.size);
+        this.markerCtx.clearRect(0,0,this.size, this.size);
+
         const map = this.createEmptyMap(this.size);
         this.generateTerrain(map);
         const resources = this.generateResources(map);
@@ -633,6 +639,9 @@ class App extends Component<{}, IAppState> {
 
         setTimeout(() => {
           this.testTrade(map, resources, tradeCtx!);
+
+          var c = new city(resources[0]);
+          c.findEquilibrium(goods, 25);
         }, 100);
 
         /*
@@ -683,7 +692,7 @@ class App extends Component<{}, IAppState> {
           id="markerCanvas"
           ref={markerCanvas => { if (markerCanvas && !this.state.markerCanvas) { this.setState({ markerCanvas }); } }}
         />
-        <button onClick={() => { this.regen() }}>Regen</button>
+        <button style={{marginTop: this.size + "px"}} onClick={() => { this.regen() }}>Regen</button>
       </div>
     );
   }
