@@ -234,7 +234,7 @@ class App extends Component<{}, IAppState> {
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
         const closest = distances.slice(1, 4);
 
-        this.tradeCtx.strokeStyle = "tan";
+        this.tradeCtx.strokeStyle = "brown";
         for (const close of closest) {
           this.tradeCtx.beginPath();
           this.tradeCtx.strokeStyle = "rgba(160,140,100," + (255 / close.crow) + ")";
