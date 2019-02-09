@@ -230,7 +230,7 @@ class App extends Component<{}, IAppState> {
       const trails: tile[] = [];
       for (let i = 0; i < resources.length; i++) {
         const currentStartingResource = resources[i];
-        // draw lines to the 5 closest items.
+        // draw lines to the 3 closest items.
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
         const closest = distances.slice(1, 4);
 
