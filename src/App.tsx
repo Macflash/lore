@@ -232,7 +232,7 @@ class App extends Component<{}, IAppState> {
         const currentStartingResource = resources[i];
         // draw lines to the 5 closest items.
         const distances = pairwiseDistance[i].slice(0).sort((a, b) => { if (a.crow > b.crow) { return 1; } if (a.crow == b.crow) { return 0; } return -1; });
-        const closest = distances.slice(1, 7);
+        const closest = distances.slice(1, 4);
 
         this.tradeCtx.strokeStyle = "tan";
         for (const close of closest) {
